@@ -1,0 +1,5 @@
+{
+  "name": "Partner Manager Pro",
+  "description": "A comprehensive dashboard for managing agency partners, tracking client subscriptions, and calculating commission liquidations with complex lock-up and vesting rules.",
+  "requestFramePermissions": []
+}
