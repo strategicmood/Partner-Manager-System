@@ -4,17 +4,21 @@ import LiquidationBuilder from './components/LiquidationBuilder';
 import Dashboard from './components/Dashboard';
 import PayoutHistory from './components/PayoutHistory';
 import GoalsConfig from './components/GoalsConfig';
-import CommercialConditions from './components/CommercialConditions'; // NEW IMPORT
+import CommercialConditions from './components/CommercialConditions';
+import PartnerDetailView from './components/PartnerDetailView'; // NEW IMPORT
 import { MOCK_PARTNERS, MOCK_SUBSCRIPTIONS, MOCK_LIQUIDATIONS, MOCK_PAYOUTS, INITIAL_GOALS, MOCK_PLANS } from './constants';
-import { fetchAndParseData } from './services/sheets'; // NEW IMPORT
+import { fetchAndParseData } from './services/sheets';
 import { formatCurrency } from './services/logic';
-import { Menu, Search, ArrowUpCircle, PlusCircle, CheckCircle2, Upload, Database, Palette, Save, RefreshCw, AlertTriangle, Mail } from 'lucide-react';
+import { Menu, Search, ArrowUpCircle, PlusCircle, CheckCircle2, Upload, Database, Palette, Save, RefreshCw, AlertTriangle, Mail, ArrowRight } from 'lucide-react';
 import { PayoutRecord, Liquidation, GoalTarget, AppSettings, CommercialPlan, Partner, Subscription } from './types';
 
 function App() {
   const [currentView, setCurrentView] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
+  // New State for Detailed View
+  const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
+
   // Data State
   const [liquidations, setLiquidations] = useState(MOCK_LIQUIDATIONS);
   const [payouts, setPayouts] = useState<PayoutRecord[]>(MOCK_PAYOUTS);
@@ -23,7 +27,7 @@ function App() {
   const [commercialPlans, setCommercialPlans] = useState<CommercialPlan[]>(MOCK_PLANS);
   const [goals, setGoals] = useState<GoalTarget[]>(INITIAL_GOALS);
 
-  // App Settings State - Updated Default Color & Pre-filled URLs
+  // App Settings State
   const [appSettings, setAppSettings] = useState<AppSettings>({
     logoUrl: null,
     brandColor: '#ed8b01',
@@ -52,7 +56,6 @@ function App() {
           return;
       }
 
-      // Only update state if data was found, otherwise keep mocks (or handle empty state)
       if (results.partners.length > 0) setPartners(results.partners);
       if (results.subscriptions.length > 0) setSubscriptions(results.subscriptions);
       if (results.liquidations.length > 0) setLiquidations(results.liquidations);
@@ -62,7 +65,6 @@ function App() {
       setIsLoading(false);
   };
 
-  // Initial Sync on Mount
   useEffect(() => {
       syncData();
   }, []);
@@ -87,7 +89,6 @@ function App() {
     }));
   };
 
-  // NEW: Handle creating a new commercial plan
   const handleAddPlan = (newPlan: CommercialPlan) => {
     setCommercialPlans(prev => [...prev, newPlan]);
   };
@@ -111,6 +112,12 @@ function App() {
       }));
   };
 
+  // Handle Navigation Change (reset selected partner)
+  const handleNavigation = (view: string) => {
+      setCurrentView(view);
+      setSelectedPartner(null);
+  };
+
   const PartnersView = () => {
     const [searchTerm, setSearchTerm] = useState('');
     
@@ -124,7 +131,6 @@ function App() {
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <h2 className="text-2xl font-bold text-slate-800">👥 Directorio Partners</h2>
             
-            {/* Search Bar */}
             <div className="relative w-full md:w-64">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Search className="h-4 w-4 text-slate-400" />
@@ -144,11 +150,12 @@ function App() {
               <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase font-medium">
                 <tr>
                   <th className="px-6 py-4">Nombre Partner</th>
+                  <th className="px-6 py-4">Volumen (MRR)</th>
                   <th className="px-6 py-4">Nivel</th>
                   <th className="px-6 py-4">Contacto</th>
-                  <th className="px-6 py-4">F. Activación</th>
                   <th className="px-6 py-4 text-center">Liquida?</th>
                   <th className="px-6 py-4 text-center">Estatus</th>
+                  <th className="px-6 py-4"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -157,10 +164,25 @@ function App() {
                     if (p.Nivel === 'Platinum') badgeColor = "bg-indigo-100 text-indigo-800 border-indigo-300";
                     if (p.Nivel === 'Gold') badgeColor = "bg-amber-100 text-amber-800 border-amber-300";
                     if (p.Nivel === 'Silver') badgeColor = "bg-slate-100 text-slate-800 border-slate-300";
+                    
+                    // Volume Calculation for Table View
+                    const mrr = subscriptions
+                        .filter(s => s.ID_Partner === p.ID_Partner && s.Estado === 'Activo')
+                        .reduce((acc, curr) => acc + curr.Cuota, 0);
 
                     return (
-                        <tr key={p.ID_Partner} className="hover:bg-slate-50">
-                            <td className="px-6 py-4 font-bold text-slate-900">{p.Nombre}</td>
+                        <tr key={p.ID_Partner} className="hover:bg-slate-50 group">
+                            <td className="px-6 py-4 font-bold text-slate-900">
+                                <button 
+                                    onClick={() => setSelectedPartner(p)}
+                                    className="hover:text-indigo-600 hover:underline text-left focus:outline-none"
+                                >
+                                    {p.Nombre}
+                                </button>
+                            </td>
+                            <td className="px-6 py-4 font-mono text-slate-700">
+                                {formatCurrency(mrr)}
+                            </td>
                             <td className="px-6 py-4">
                                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${badgeColor}`}>
                                     {p.Nivel}
@@ -174,9 +196,6 @@ function App() {
                                     </div>
                                 )}
                             </td>
-                            <td className="px-6 py-4 text-slate-500">{p.Fecha_Alta}</td>
-                            
-                            {/* Liquida Column */}
                             <td className="px-6 py-4 text-center">
                                 {p.Liquida_com_partner !== false ? (
                                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
@@ -200,12 +219,20 @@ function App() {
                                     </span>
                                 )}
                             </td>
+                            <td className="px-6 py-4 text-right">
+                                <button 
+                                    onClick={() => setSelectedPartner(p)}
+                                    className="text-slate-300 hover:text-indigo-600 transition-colors"
+                                >
+                                    <ArrowRight size={18} />
+                                </button>
+                            </td>
                         </tr>
                     );
                 })}
                 {filteredPartners.length === 0 && (
                     <tr>
-                        <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
+                        <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
                             No se encontraron resultados para "{searchTerm}"
                         </td>
                     </tr>
@@ -230,7 +257,6 @@ function App() {
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <h2 className="text-2xl font-bold text-slate-800">💼 Cartera Clientes</h2>
             
-            {/* Search Bar */}
             <div className="relative w-full md:w-64">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Search className="h-4 w-4 text-slate-400" />
@@ -462,14 +488,23 @@ function App() {
             goals={goals}
         />;
       case 'goals': return <GoalsConfig goals={goals} onUpdateGoals={setGoals} />;
-      case 'partners': return <PartnersView />;
+      case 'partners': 
+        if (selectedPartner) {
+            return <PartnerDetailView 
+                partner={selectedPartner} 
+                subscriptions={subscriptions} 
+                liquidations={liquidations}
+                onBack={() => setSelectedPartner(null)} 
+            />;
+        }
+        return <PartnersView />;
       case 'clients': return <ClientsView />;
-      case 'conditions': return <CommercialConditions plans={commercialPlans} onAddPlan={handleAddPlan} />; // PASS ON ADD PLAN
+      case 'conditions': return <CommercialConditions plans={commercialPlans} onAddPlan={handleAddPlan} />;
       case 'liquidations': return <LiquidationBuilder 
             partners={partners} 
             subscriptions={subscriptions} 
             liquidations={liquidations}
-            commercialPlans={commercialPlans} // PASS PLANS
+            commercialPlans={commercialPlans}
             onRegisterLiquidation={handleRegisterLiquidation}
         />;
       case 'payouts_history': return <PayoutHistory 
@@ -489,7 +524,7 @@ function App() {
     <div className="flex h-screen bg-slate-50 overflow-hidden font-sans text-slate-900">
       <Sidebar 
         currentView={currentView} 
-        onNavigate={setCurrentView} 
+        onNavigate={handleNavigation} 
         isOpen={isSidebarOpen}
         toggleSidebar={toggleSidebar}
         logoUrl={appSettings.logoUrl}

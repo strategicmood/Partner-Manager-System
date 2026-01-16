@@ -1,3 +1,4 @@
+
 import { Subscription, Liquidation, PayableItem, Partner, TierRule, CommercialPlan } from '../types';
 
 // Helper to calculate based on specific Tier Rules
@@ -168,9 +169,9 @@ export const generateAccountStatus = (
     }
   });
 
-  // 2. Post-Process: Group previous years' PENDING items
+  // 2. Post-Process: Group previous years' PENDING items into "Saldo Anterior"
   const finalItems: PayableItem[] = [];
-  const pendingByYearAndClient: Record<string, { amount: number; items: PayableItem[]; year: number }> = {};
+  const pendingLegacyGroup: Record<string, { amount: number; items: PayableItem[] }> = {};
 
   granularItems.forEach(item => {
     if (item.id.startsWith('LEGACY')) {
@@ -181,27 +182,28 @@ export const generateAccountStatus = (
     const itemYear = parseInt(item.Mes.split('-')[0]);
 
     // Group only if previous year AND Pending (not paused)
+    // We aggregate ALL previous years into a single key per client
     if (itemYear < currentYear && item.Estado === 'Pendiente') {
-      const key = `${item.ID_Partner}-${item.Cliente}-${itemYear}`;
-      if (!pendingByYearAndClient[key]) {
-        pendingByYearAndClient[key] = { amount: 0, items: [], year: itemYear };
+      const key = `${item.ID_Partner}-${item.Cliente}-PREVIOUS`;
+      if (!pendingLegacyGroup[key]) {
+        pendingLegacyGroup[key] = { amount: 0, items: [] };
       }
-      pendingByYearAndClient[key].amount += item.Importe;
-      pendingByYearAndClient[key].items.push(item);
+      pendingLegacyGroup[key].amount += item.Importe;
+      pendingLegacyGroup[key].items.push(item);
     } else {
       finalItems.push(item);
     }
   });
 
   // Create aggregated items for previous years
-  Object.values(pendingByYearAndClient).forEach(group => {
+  Object.values(pendingLegacyGroup).forEach(group => {
     if (group.items.length > 0) {
       const firstItem = group.items[0];
       finalItems.push({
         ...firstItem,
-        id: `SALDO-${firstItem.ID_Suscripcion}-${group.year}`,
-        Mes: `Saldo ${group.year}`,
-        Regla: `Acumulado ${group.year}`,
+        id: `SALDO-ANTERIOR-${firstItem.ID_Suscripcion}`,
+        Mes: `Saldo Anterior`,
+        Regla: `Acumulado hasta cierre ${currentYear - 1}`,
         Importe: group.amount,
         Estado: 'Pendiente',
         isSelectable: true
@@ -213,10 +215,7 @@ export const generateAccountStatus = (
   return finalItems.sort((a, b) => {
     const getSortKey = (item: PayableItem) => {
       if (item.id.startsWith('LEGACY')) return '0000-00'; 
-      if (item.Mes.startsWith('Saldo')) {
-        const year = item.Mes.split(' ')[1];
-        return `${year}-00`;
-      }
+      if (item.Mes.startsWith('Saldo')) return '0000-01'; // Place Saldo Anterior at the top
       return item.Mes;
     };
     return getSortKey(a).localeCompare(getSortKey(b));
