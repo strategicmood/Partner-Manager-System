@@ -1,53 +1,62 @@
 
 export type PartnerTier = 'Platinum' | 'Gold' | 'Silver';
 
+// Added GoalPeriodId type
+export type GoalPeriodId = string;
+
 export interface Partner {
   ID_Partner: string;
   Nombre: string;
-  Contacto: string; // Contact Person
+  Contacto: string;
   Email: string;
-  Estado: 'Partner' | 'Potential Partner'; 
-  Nivel: PartnerTier; 
-  PlanId: string; // Links partner to a specific Commercial Plan
-  Fecha_Alta: string; // YYYY-MM-DD
-  
-  // Optional flag for logic/parsing safety
-  Liquida_com_partner?: boolean;
+  Estado: 'Partner' | 'Potential Partner';
+  Nivel: PartnerTier;
+  Fecha_Alta: string;
+  Liquida_com_partner: boolean;
+  PlanId?: string; // Optional link to a specific incentive plan
+}
+
+export interface Company {
+  id: string;
+  nombre_empresa: string;
+  dominio: string;
+  id_partner: string;
+  estado_global: string;
+  fecha_conversion: string;
 }
 
 export interface Subscription {
   ID_Suscripcion: string;
-  ID_Partner: string;
-  Cliente: string;
-  Fecha_Inicio: string; // YYYY-MM-DD
-  Fecha_Fin?: string; // YYYY-MM-DD
+  id_cliente: string; // FK to Company
+  id_incentivo: string; // FK to Plan
   Cuota: number;
-  Tipo: 'New' | 'Upgrade'; // Plan Type
-  Estado: 'Activo' | 'Cancelado';
-  
-  // New fields for Data Migration / Opening Balance
-  Saldo_Inicial?: number; // Deuda acumulada anterior
-  Fecha_Calculo_Comision?: string; // YYYY-MM-DD (Override start date for calculations)
-  
-  // Handling temporary pauses
-  Meses_Pausados?: string; // Comma separated list of YYYY-MM (e.g., "2024-08, 2024-09")
+  Tipo: 'Alta' | 'Upgrade' | 'New' | string;
+  Estado: 'Activa' | 'Cancelada' | 'Activo' | 'Cancelado';
+  Fecha_Inicio: string;
+  Fecha_Fin: string | null;
+  Saldo_Inicial: number;
+  // Optional for logic calculation
+  Meses_Pausados?: string;
+  Fecha_Calculo_Comision?: string;
 }
 
 export interface Liquidation {
   ID_Liquidacion: string;
   ID_Partner: string;
-  Cliente: string;
-  Mes_Pagado: string; // YYYY-MM
+  ID_Suscripcion: string;
+  Mes_Pagado: string;
   Monto: number;
   Fecha_Pago: string;
+  // Added optional Cliente field for compatibility with UI/Mocks
+  Cliente?: string;
 }
 
 export interface PayableItem {
-  id: string; 
+  id: string;
   ID_Suscripcion: string;
   ID_Partner: string;
-  Cliente: string;
-  Mes: string; // YYYY-MM or Label
+  Cliente: string; // Resolved from Company
+  Mes: string;
   Regla: string;
   Importe: number;
   Estado: 'Pendiente' | 'Pagado' | 'Lock-up' | 'Pausado';
@@ -66,14 +75,39 @@ export interface PayoutRecord {
   items: Liquidation[];
 }
 
-export type GoalPeriodId = 'Q1' | 'Q2' | 'Q3' | 'Q4' | 'Annual';
-
 export interface GoalTarget {
-  id: GoalPeriodId;
-  label: string;
-  newClientsTarget: number;
-  newPartnersTarget: number;
-  mrrTarget: number;
+  id: string;
+  periodo: string;
+  meta_altas: number;
+  meta_partners: number; // Added meta_partners
+  meta_mrr: number;
+  fecha_inicio: string;
+  fecha_fin: string;
+  // Added optional label field for compatibility with Mocks
+  label?: string;
+}
+
+export interface TierRule {
+  tier: PartnerTier;
+  minCount: number;
+  maxCount: number | null;
+  bountyMonths: number;
+  bountyPercentage: number;
+  year1Percentage: number;
+  year2Percentage: number;
+  vestingMonths: number;
+}
+
+export interface CommercialPlan {
+  id: string;
+  nombre_programa: string;
+  anio_vigencia: number;
+  isActive: boolean;
+  rules: TierRule[];
+  // Added optional fields for UI compatibility
+  name?: string;
+  startDate?: string;
+  isDefault?: boolean;
 }
 
 export interface AppSettings {
@@ -83,33 +117,8 @@ export interface AppSettings {
     partners: string;
     subscriptions: string;
     liquidations: string;
-    plans: string; // New field for Commercial Plans Sheet
+    plans: string;
+    companies: string;
+    goals: string;
   };
-}
-
-// Configuration for Commercial Rules
-export interface TierRule {
-  tier: PartnerTier;
-  // Client Ranges
-  minCount: number;
-  maxCount: number | null; // null means Infinity
-  
-  // Commission Structure
-  bountyMonths: number; // How many months get 100% (1, 2, or 3)
-  bountyPercentage: number; // Usually 1.0 (100%)
-  year1Percentage: number; // Usually 0.20 (20%)
-  year2Percentage: number; // Usually 0.15 (15%)
-  
-  // Vesting / Lock-up
-  vestingMonths: number; // Minimum months client must be active to release commission (e.g. 6)
-}
-
-// Commercial Plan Container
-export interface CommercialPlan {
-  id: string;
-  name: string;
-  startDate: string;
-  isActive: boolean;
-  isDefault: boolean;
-  rules: TierRule[];
 }

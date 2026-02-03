@@ -34,7 +34,7 @@ const GoalsConfig: React.FC<GoalsConfigProps> = ({ goals, onUpdateGoals }) => {
     setIsEditing(false);
   };
 
-  const handleInputChange = (field: keyof GoalTarget, value: number) => {
+  const handleInputChange = (field: keyof GoalTarget, value: any) => {
     setEditValues(prev => ({
         ...prev,
         [field]: value
@@ -66,7 +66,7 @@ const GoalsConfig: React.FC<GoalsConfigProps> = ({ goals, onUpdateGoals }) => {
                             : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'}
                     `}
                   >
-                      {g.label}
+                      {g.label || g.periodo}
                   </button>
               )
           })}
@@ -77,7 +77,7 @@ const GoalsConfig: React.FC<GoalsConfigProps> = ({ goals, onUpdateGoals }) => {
             <div>
                 <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                     <Calendar className="w-5 h-5 text-indigo-500" />
-                    Objetivos: {currentGoal.label}
+                    Objetivos: {currentGoal.label || currentGoal.periodo}
                 </h3>
                 <p className="text-sm text-slate-500">
                     {isEditing ? 'Editando valores manualmente' : 'Visualizando metas establecidas'}
@@ -123,13 +123,13 @@ const GoalsConfig: React.FC<GoalsConfigProps> = ({ goals, onUpdateGoals }) => {
                     <div className="flex justify-center">
                         <input 
                             type="number" 
-                            value={editValues.newClientsTarget}
-                            onChange={(e) => handleInputChange('newClientsTarget', parseInt(e.target.value) || 0)}
+                            value={editValues.meta_altas}
+                            onChange={(e) => handleInputChange('meta_altas', parseInt(e.target.value) || 0)}
                             className="text-3xl font-bold text-slate-800 text-center w-24 border-b-2 border-indigo-300 focus:border-indigo-600 focus:outline-none bg-transparent"
                         />
                     </div>
                 ) : (
-                    <div className="text-3xl font-bold text-slate-800">{currentGoal.newClientsTarget}</div>
+                    <div className="text-3xl font-bold text-slate-800">{currentGoal.meta_altas}</div>
                 )}
                 
                 <p className="text-xs text-slate-400 mt-2">Target {currentGoal.id === 'Annual' ? 'Anual' : 'Trimestral'}</p>
@@ -146,13 +146,13 @@ const GoalsConfig: React.FC<GoalsConfigProps> = ({ goals, onUpdateGoals }) => {
                     <div className="flex justify-center">
                          <input 
                             type="number" 
-                            value={editValues.newPartnersTarget}
-                            onChange={(e) => handleInputChange('newPartnersTarget', parseInt(e.target.value) || 0)}
+                            value={editValues.meta_partners}
+                            onChange={(e) => handleInputChange('meta_partners', parseInt(e.target.value) || 0)}
                             className="text-3xl font-bold text-slate-800 text-center w-24 border-b-2 border-indigo-300 focus:border-indigo-600 focus:outline-none bg-transparent"
                         />
                     </div>
                 ) : (
-                    <div className="text-3xl font-bold text-slate-800">{currentGoal.newPartnersTarget}</div>
+                    <div className="text-3xl font-bold text-slate-800">{currentGoal.meta_partners}</div>
                 )}
                 
                 <p className="text-xs text-slate-400 mt-2">Target {currentGoal.id === 'Annual' ? 'Anual' : 'Trimestral'}</p>
@@ -169,14 +169,14 @@ const GoalsConfig: React.FC<GoalsConfigProps> = ({ goals, onUpdateGoals }) => {
                     <div className="flex justify-center items-center gap-1">
                         <input 
                             type="number" 
-                            value={editValues.mrrTarget}
-                            onChange={(e) => handleInputChange('mrrTarget', parseFloat(e.target.value) || 0)}
+                            value={editValues.meta_mrr}
+                            onChange={(e) => handleInputChange('meta_mrr', parseFloat(e.target.value) || 0)}
                             className="text-3xl font-bold text-slate-800 text-center w-32 border-b-2 border-indigo-300 focus:border-indigo-600 focus:outline-none bg-transparent"
                         />
                         <span className="text-lg text-slate-400 font-medium">€</span>
                     </div>
                 ) : (
-                    <div className="text-3xl font-bold text-slate-800">{formatCurrency(currentGoal.mrrTarget)}</div>
+                    <div className="text-3xl font-bold text-slate-800">{formatCurrency(currentGoal.meta_mrr)}</div>
                 )}
                 
                 <p className="text-xs text-slate-400 mt-2">Target {currentGoal.id === 'Annual' ? 'Anual' : 'Trimestral'}</p>

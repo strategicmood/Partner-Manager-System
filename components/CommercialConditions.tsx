@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { CommercialPlan, TierRule } from '../types';
 import { Award, CheckCircle2, Percent, FolderOpen, Calendar, Plus, Users, Crown, Save, X, Settings2, Clock, ShieldCheck, ArrowRight } from 'lucide-react';
@@ -44,9 +45,12 @@ const CommercialConditions: React.FC<CommercialConditionsProps> = ({ plans, onAd
   };
 
   const handleSavePlan = () => {
+      // Fixed: Updated property names to match CommercialPlan interface
       const newPlan: CommercialPlan = {
           id: `PLAN-${new Date().getFullYear()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`,
+          nombre_programa: newPlanName,
           name: newPlanName,
+          anio_vigencia: new Date().getFullYear(),
           startDate: newPlanStart,
           isActive: true,
           isDefault: false,
@@ -311,7 +315,7 @@ const CommercialConditions: React.FC<CommercialConditionsProps> = ({ plans, onAd
                             </div>
                             <div className="text-left">
                                 <div className={`font-bold text-sm ${activePlanId === plan.id ? 'text-slate-800' : 'text-slate-600'}`}>
-                                    {plan.name}
+                                    {plan.nombre_programa || plan.name}
                                 </div>
                                 <div className="text-xs text-slate-400 flex items-center gap-1">
                                     <Calendar size={10} /> {plan.startDate}
